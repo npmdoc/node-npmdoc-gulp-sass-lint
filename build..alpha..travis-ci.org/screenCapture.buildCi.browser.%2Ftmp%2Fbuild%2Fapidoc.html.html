@@ -1,0 +1,260 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/sasstools/gulp-sass-lint#readme">gulp-sass-lint (v1.3.2)</a>
+</h1>
+<h4>Gulp plugin for Sass Lint</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.gulp-sass-lint">module gulp-sass-lint</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.gulp-sass-lint.gulp-sass-lint">
+            function <span class="apidocSignatureSpan"></span>gulp-sass-lint
+            <span class="apidocSignatureSpan">(options)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.gulp-sass-lint.failOnError">
+            function <span class="apidocSignatureSpan">gulp-sass-lint.</span>failOnError
+            <span class="apidocSignatureSpan">()</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.gulp-sass-lint.format">
+            function <span class="apidocSignatureSpan">gulp-sass-lint.</span>format
+            <span class="apidocSignatureSpan">(writable)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.gulp-sass-lint" id="apidoc.module.gulp-sass-lint">module gulp-sass-lint</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.gulp-sass-lint.gulp-sass-lint" id="apidoc.element.gulp-sass-lint.gulp-sass-lint">
+        function <span class="apidocSignatureSpan"></span>gulp-sass-lint
+        <span class="apidocSignatureSpan">(options)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">gulp-sass-lint = function (options) {
+  var userOptions = options || {};
+  var configFile = userOptions.configFile;
+
+  var compile = through.obj(function (file, encoding, cb) {
+
+    if (file.isNull()) {
+      return cb();
+    }
+    if (file.isStream()) {
+      this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
+      return cb();
+    }
+
+    // load our config from sassLint and the user provided options if available
+    file.sassConfig = lint.getConfig(userOptions, configFile);
+    // save the config file within the file object for access when this file is piped around
+    file.userOptions = userOptions;
+    file.configFile = configFile;
+
+    // lint the file and pass the user defined options and config path to sass lint to handle
+    try {
+      file.sassLint = [
+        lint.lintFileText({
+          'text': file.contents,
+          'format': path.extname(file.path).replace('.', ''),
+          'filename': path.relative(process.cwd(), file.path)
+        }, userOptions, configFile)];
+    } catch(e) {
+      this.emit('error', new PluginError(PLUGIN_NAME, e.message));
+    }
+
+    this.push(file);
+    cb();
+  });
+  return compile;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">n/a</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.gulp-sass-lint.failOnError" id="apidoc.element.gulp-sass-lint.failOnError">
+        function <span class="apidocSignatureSpan">gulp-sass-lint.</span>failOnError
+        <span class="apidocSignatureSpan">()</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">failOnError = function () {
+  var filesWithErrors = [];
+  var compile = through({objectMode: true}, function (file, encoding, cb) {
+    if (file.isNull()) {
+      return cb();
+    }
+
+    if (file.isStream()) {
+      this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
+      return cb();
+    }
+
+    if (file.sassLint[0].errorCount &gt; 0) {
+      filesWithErrors.push(file);
+    }
+
+    this.push(file);
+    cb();
+  }, function (cb) {
+    var errorMessage;
+
+    if (filesWithErrors.length &gt; 0) {
+      errorMessage = filesWithErrors.map(function (file) {
+        return file.sassLint[0].errorCount + ' errors detected in ' + file.relative
+      }).join('\n');
+
+      this.emit('error', new PluginError(PLUGIN_NAME, errorMessage));
+    }
+
+    cb();
+  });
+
+  return compile;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+var gulp = require('gulp'),
+    sassLint = require('gulp-sass-lint');
+
+gulp.task('default', function () {
+  return gulp.src('sass/**/*.s+(a|c)ss')
+    .pipe(sassLint())
+    .pipe(sassLint.format())
+    .pipe(sassLint.<span class="apidocCodeKeywordSpan">failOnError</span>())
+});
+```
+
+## API
+
+### sassLint(options)
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.gulp-sass-lint.format" id="apidoc.element.gulp-sass-lint.format">
+        function <span class="apidocSignatureSpan">gulp-sass-lint.</span>format
+        <span class="apidocSignatureSpan">(writable)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">format = function (writable) {
+  var compile = through.obj(function (file, encoding, cb) {
+    if (file.isNull()) {
+      return cb();
+    }
+    if (file.isStream()) {
+      this.emit('error', new PluginError(PLUGIN_NAME, 'Streams are not supported!'));
+      return cb();
+    }
+
+    if (writable) {
+      var result = lint.format(file.sassLint, file.userOptions, file.configFile);
+      writable.write(result);
+    }
+    else {
+      lint.outputResults(file.sassLint, file.userOptions, file.configFile);
+    }
+
+    this.push(file);
+    cb();
+  });
+  return compile;
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+var gulp = require('gulp'),
+    sassLint = require('gulp-sass-lint');
+
+gulp.task('default', function () {
+  return gulp.src('sass/**/*.s+(a|c)ss')
+    .pipe(sassLint())
+    .pipe(sassLint.<span class="apidocCodeKeywordSpan">format</span>())
+    .pipe(sassLint.failOnError())
+});
+```
+
+## API
+
+### sassLint(options)
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
